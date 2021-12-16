@@ -250,6 +250,7 @@ homeassistant/components/image/* @home-assistant/core
 homeassistant/components/incomfort/* @zxdavb
 homeassistant/components/influxdb/* @fabaff @mdegat01
 homeassistant/components/input_boolean/* @home-assistant/core
+homeassistant/components/input_button/* @home-assistant/core
 homeassistant/components/input_datetime/* @home-assistant/core
 homeassistant/components/input_number/* @home-assistant/core
 homeassistant/components/input_select/* @home-assistant/core
