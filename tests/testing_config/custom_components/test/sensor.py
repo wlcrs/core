@@ -5,13 +5,13 @@ Call init before using it in your tests to ensure clean test data.
 """
 import homeassistant.components.sensor as sensor
 from homeassistant.const import (
-    APPARENT_POWER_VA,
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     CONCENTRATION_PARTS_PER_MILLION,
     FREQUENCY_GIGAHERTZ,
     PERCENTAGE,
+    POWER_VOLT_AMPERE,
+    POWER_VAR,
     PRESSURE_HPA,
-    REACTIVE_POWER_VAR,
     SIGNAL_STRENGTH_DECIBELS,
     VOLUME_CUBIC_METERS,
 )
@@ -22,7 +22,7 @@ DEVICE_CLASSES = list(sensor.DEVICE_CLASSES)
 DEVICE_CLASSES.append("none")
 
 UNITS_OF_MEASUREMENT = {
-    sensor.DEVICE_CLASS_APPARENT_POWER: APPARENT_POWER_VA,  # apparent power (VA)
+    sensor.DEVICE_CLASS_APPARENT_POWER: POWER_VOLT_AMPERE,  # apparent power (VA)
     sensor.DEVICE_CLASS_BATTERY: PERCENTAGE,  # % of battery that is left
     sensor.DEVICE_CLASS_CO: CONCENTRATION_PARTS_PER_MILLION,  # ppm of CO concentration
     sensor.DEVICE_CLASS_CO2: CONCENTRATION_PARTS_PER_MILLION,  # ppm of CO2 concentration
@@ -44,7 +44,7 @@ UNITS_OF_MEASUREMENT = {
     sensor.DEVICE_CLASS_ENERGY: "kWh",  # energy (Wh/kWh/MWh)
     sensor.DEVICE_CLASS_FREQUENCY: FREQUENCY_GIGAHERTZ,  # energy (Hz/kHz/MHz/GHz)
     sensor.DEVICE_CLASS_POWER_FACTOR: PERCENTAGE,  # power factor (no unit, min: -1.0, max: 1.0)
-    sensor.DEVICE_CLASS_REACTIVE_POWER: REACTIVE_POWER_VAR,  # reactive power (var)
+    sensor.DEVICE_CLASS_REACTIVE_POWER: POWER_VAR,  # reactive power (var)
     sensor.DEVICE_CLASS_VOLATILE_ORGANIC_COMPOUNDS: CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,  # µg/m³ of vocs
     sensor.DEVICE_CLASS_VOLTAGE: "V",  # voltage (V)
     sensor.DEVICE_CLASS_GAS: VOLUME_CUBIC_METERS,  # gas (m³)
