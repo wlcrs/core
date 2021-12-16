@@ -82,6 +82,7 @@ async def test_get_conditions(hass, device_reg, entity_reg, enable_custom_integr
         if device_class != "none"
     ]
     conditions = await async_get_device_automations(hass, "condition", device_entry.id)
+    assert len(conditions) == 26
     assert conditions == expected_conditions
 
 

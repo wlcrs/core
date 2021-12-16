@@ -14,6 +14,7 @@ from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_FOR,
     CONF_TYPE,
+    DEVICE_CLASS_APPARENT_POWER,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_CO,
     DEVICE_CLASS_CO2,
@@ -33,6 +34,7 @@ from homeassistant.const import (
     DEVICE_CLASS_POWER,
     DEVICE_CLASS_POWER_FACTOR,
     DEVICE_CLASS_PRESSURE,
+    DEVICE_CLASS_REACTIVE_POWER,
     DEVICE_CLASS_SIGNAL_STRENGTH,
     DEVICE_CLASS_SULPHUR_DIOXIDE,
     DEVICE_CLASS_TEMPERATURE,
@@ -50,6 +52,7 @@ from . import DOMAIN
 
 DEVICE_CLASS_NONE = "none"
 
+CONF_APPARENT_POWER = "apparent_power"
 CONF_BATTERY_LEVEL = "battery_level"
 CONF_CO = "carbon_monoxide"
 CONF_CO2 = "carbon_dioxide"
@@ -69,6 +72,7 @@ CONF_PM25 = "pm25"
 CONF_POWER = "power"
 CONF_POWER_FACTOR = "power_factor"
 CONF_PRESSURE = "pressure"
+CONF_REACTIVE_POWER = "reactive_power"
 CONF_SIGNAL_STRENGTH = "signal_strength"
 CONF_SULPHUR_DIOXIDE = "sulphur_dioxide"
 CONF_TEMPERATURE = "temperature"
@@ -77,6 +81,7 @@ CONF_VOLTAGE = "voltage"
 CONF_VALUE = "value"
 
 ENTITY_TRIGGERS = {
+    DEVICE_CLASS_APPARENT_POWER: [{CONF_TYPE: CONF_APPARENT_POWER}],
     DEVICE_CLASS_BATTERY: [{CONF_TYPE: CONF_BATTERY_LEVEL}],
     DEVICE_CLASS_CO: [{CONF_TYPE: CONF_CO}],
     DEVICE_CLASS_CO2: [{CONF_TYPE: CONF_CO2}],
@@ -96,6 +101,7 @@ ENTITY_TRIGGERS = {
     DEVICE_CLASS_POWER: [{CONF_TYPE: CONF_POWER}],
     DEVICE_CLASS_POWER_FACTOR: [{CONF_TYPE: CONF_POWER_FACTOR}],
     DEVICE_CLASS_PRESSURE: [{CONF_TYPE: CONF_PRESSURE}],
+    DEVICE_CLASS_REACTIVE_POWER: [{CONF_TYPE: CONF_REACTIVE_POWER}],
     DEVICE_CLASS_SIGNAL_STRENGTH: [{CONF_TYPE: CONF_SIGNAL_STRENGTH}],
     DEVICE_CLASS_SULPHUR_DIOXIDE: [{CONF_TYPE: CONF_SULPHUR_DIOXIDE}],
     DEVICE_CLASS_TEMPERATURE: [{CONF_TYPE: CONF_TEMPERATURE}],
@@ -113,6 +119,7 @@ TRIGGER_SCHEMA = vol.All(
             vol.Required(CONF_ENTITY_ID): cv.entity_id,
             vol.Required(CONF_TYPE): vol.In(
                 [
+                    CONF_APPARENT_POWER,
                     CONF_BATTERY_LEVEL,
                     CONF_CO,
                     CONF_CO2,
@@ -132,6 +139,7 @@ TRIGGER_SCHEMA = vol.All(
                     CONF_POWER,
                     CONF_POWER_FACTOR,
                     CONF_PRESSURE,
+                    CONF_REACTIVE_POWER,
                     CONF_SIGNAL_STRENGTH,
                     CONF_SULPHUR_DIOXIDE,
                     CONF_TEMPERATURE,
