@@ -1,0 +1,15 @@
+select_preset:
+  name: Select preset
+  description: Send the media player the command to change to a preset.
+  target:
+    entity:
+      integration: frontier_silicon
+      domain: media_player
+  fields:
+    preset:
+      name: Preset
+      description: Name of the preset to switch to. Platform dependent.
+      required: true
+      example: "1"
+      selector:
+        text:
