@@ -1,0 +1,15 @@
+{
+  "domain": "frontier_silicon2",
+  "name": "Frontier Silicon NEW",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/frontier_silicon2",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": [
+    "@wlcrs"
+  ],
+  "iot_class": "local_polling"
+}

@@ -189,6 +189,7 @@ homeassistant/components/fritz/* @mammuth @AaronDavidSchneider @chemelli74
 homeassistant/components/fritzbox/* @mib1185 @flabbamann
 homeassistant/components/fronius/* @nielstron @farmio
 homeassistant/components/frontend/* @home-assistant/frontend
+homeassistant/components/frontier_silicon2/* @wlcrs
 homeassistant/components/garages_amsterdam/* @klaasnicolaas
 homeassistant/components/gdacs/* @exxamalte
 homeassistant/components/generic_hygrostat/* @Shulyaka

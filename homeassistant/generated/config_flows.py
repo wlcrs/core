@@ -104,6 +104,7 @@ FLOWS = [
     "fritzbox",
     "fritzbox_callmonitor",
     "fronius",
+    "frontier_silicon2",
     "garages_amsterdam",
     "gdacs",
     "geofency",
