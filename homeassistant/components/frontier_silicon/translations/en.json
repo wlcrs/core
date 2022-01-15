@@ -9,11 +9,16 @@
             "unknown": "Unexpected error"
         },
         "step": {
+            "device_config": {
+                "data": {
+                    "pin": "PIN Code",
+                    "use_session": "Force session usage"
+                },
+                "title": "Device Configuration"
+            },
             "user": {
                 "data": {
-                    "host": "Host",
-                    "password": "Password",
-                    "username": "Username"
+                    "device_url": "Device URL"
                 }
             }
         }
