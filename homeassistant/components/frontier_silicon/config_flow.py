@@ -19,6 +19,7 @@ from .const import (
     CONF_USE_SESSION,
     CONF_WEBFSAPI_URL,
     DOMAIN,
+    SSDP_ATTR_SPEAKER_NAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,9 +40,7 @@ STEP_DEVICE_CONFIG_DATA_SCHEMA = vol.Schema(
 )
 
 
-async def validate_device_url(
-    hass: HomeAssistant, device_url: str | None
-) -> dict[str, Any]:
+async def validate_device_url(hass: HomeAssistant, device_url: str | None) -> str:
     """Validate the device_url."""
 
     try:
@@ -188,20 +187,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(device_url)
         self._abort_if_unique_id_configured()
 
-        self.context.update({"title_placeholders": {"name": discovery_info.upnp}})
+        self.context.update(
+            {
+                "title_placeholders": {
+                    "name": discovery_info.upnp.get(SSDP_ATTR_SPEAKER_NAME)
+                }
+            }
+        )
 
         try:
             webfsapi_url = await validate_device_url(self.hass, device_url)
 
             self.context.update({CONF_WEBFSAPI_URL: webfsapi_url})
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.info(
-                f"Error while trying to setup discovered device {device_url}. Skipping."
-            )
-        else:
-            return await self.async_step_device_config()
 
-        return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA)
+            return self.async_show_form(
+                step_id="user", data_schema=STEP_USER_DATA_SCHEMA
+            )
+        except Exception:  # pylint: disable=broad-except
+            return self.async_abort(reason="cannot_connect")
 
 
 class CannotConnect(HomeAssistantError):

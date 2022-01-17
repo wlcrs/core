@@ -8,7 +8,7 @@ CONF_PIN = "pin"
 CONF_USE_SESSION = "use_session"
 
 CONF_WEBFSAPI_URL = "webfsapi_url"
-
+SSDP_ATTR_SPEAKER_NAME = "SPEAKER-NAME"
 
 SERVICE_SELECT_PRESET = "select_preset"
 
