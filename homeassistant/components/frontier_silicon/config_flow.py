@@ -75,8 +75,7 @@ async def validate_device_config(
     except FSApiException as fsapi_exception:
         if str(fsapi_exception).startswith("Access denied"):
             raise InvalidAuth from fsapi_exception
-        else:
-            raise CannotConnect from fsapi_exception
+        raise CannotConnect from fsapi_exception
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
