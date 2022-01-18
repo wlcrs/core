@@ -252,7 +252,7 @@ arcam-fmj==0.12.0
 # homeassistant.components.ssdp
 # homeassistant.components.upnp
 # homeassistant.components.yeelight
-async-upnp-client==0.23.3
+async-upnp-client==0.23.4
 
 # homeassistant.components.aurora
 auroranoaa==0.0.2
@@ -276,7 +276,7 @@ base36==0.1.1
 bellows==0.29.0
 
 # homeassistant.components.bmw_connected_drive
-bimmer_connected==0.8.7
+bimmer_connected==0.8.10
 
 # homeassistant.components.blebox
 blebox_uniapi==1.3.3
@@ -424,7 +424,7 @@ fjaraskupan==1.0.2
 flipr-api==1.4.1
 
 # homeassistant.components.flux_led
-flux_led==0.28.3
+flux_led==0.28.4
 
 # homeassistant.components.homekit
 fnvhash==0.1.0
@@ -474,7 +474,7 @@ getmac==0.8.2
 gios==2.1.0
 
 # homeassistant.components.glances
-glances_api==0.2.0
+glances_api==0.3.4
 
 # homeassistant.components.goalzero
 goalzero==0.2.1
@@ -489,7 +489,7 @@ google-api-python-client==1.6.4
 google-cloud-pubsub==2.9.0
 
 # homeassistant.components.nest
-google-nest-sdm==1.5.0
+google-nest-sdm==1.5.1
 
 # homeassistant.components.google_travel_time
 googlemaps==2.5.1
@@ -1240,7 +1240,7 @@ pytrafikverket==0.1.6.2
 pyudev==0.22.0
 
 # homeassistant.components.unifiprotect
-pyunifiprotect==1.7.0
+pyunifiprotect==3.1.1
 
 # homeassistant.components.uptimerobot
 pyuptimerobot==21.11.0
@@ -1273,7 +1273,7 @@ pyzerproc==0.4.8
 rachiopy==1.0.3
 
 # homeassistant.components.rainmachine
-regenmaschine==2021.10.0
+regenmaschine==2022.01.0
 
 # homeassistant.components.renault
 renault-api==0.1.4
