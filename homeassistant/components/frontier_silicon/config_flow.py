@@ -30,15 +30,15 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("device_url"): str,
+        vol.Required(CONF_DEVICE_URL): str,
     }
 )
 
 
 STEP_DEVICE_CONFIG_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("pin", default="1234"): str,
-        vol.Required("use_session", default=False): bool,
+        vol.Required(CONF_PIN, default="1234"): str,
+        vol.Required(CONF_USE_SESSION, default=False): bool,
     }
 )
 
