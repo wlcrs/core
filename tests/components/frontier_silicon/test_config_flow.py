@@ -92,6 +92,30 @@ async def test_invalid_device_url(hass: HomeAssistant) -> None:
     assert result2["errors"] == {"base": "cannot_connect"}
 
 
+async def test_device_url_unexpected_error(hass: HomeAssistant) -> None:
+    """Test we get the form."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == RESULT_TYPE_FORM
+    assert result["errors"] is None
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        side_effect=ValueError,
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "device_url": "http://1.1.1.1/device",
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == RESULT_TYPE_FORM
+    assert result2["errors"] == {"base": "unknown"}
+
+
 async def test_invalid_pin(hass: HomeAssistant) -> None:
     """Test we get the form."""
     result = await hass.config_entries.flow.async_init(
@@ -129,6 +153,80 @@ async def test_invalid_pin(hass: HomeAssistant) -> None:
     assert result3["errors"] == {"base": "invalid_auth"}
 
 
+async def test_device_config_connection_error(hass: HomeAssistant) -> None:
+    """Test we get the form."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == RESULT_TYPE_FORM
+    assert result["errors"] is None
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        return_value="http://1.1.1.1/webfsapi",
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "device_url": "http://1.1.1.1/device",
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == RESULT_TYPE_FORM
+    assert result2["errors"] is None
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_config",
+        side_effect=CannotConnect,
+    ):
+        result3 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"pin": "1244", "use_session": False},
+        )
+        await hass.async_block_till_done()
+
+    assert result3["type"] == RESULT_TYPE_FORM
+    assert result3["errors"] == {"base": "cannot_connect"}
+
+
+async def test_device_config_unexpected_error(hass: HomeAssistant) -> None:
+    """Test we get the form."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == RESULT_TYPE_FORM
+    assert result["errors"] is None
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        return_value="http://1.1.1.1/webfsapi",
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "device_url": "http://1.1.1.1/device",
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == RESULT_TYPE_FORM
+    assert result2["errors"] is None
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_config",
+        side_effect=ValueError,
+    ):
+        result3 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"pin": "1244", "use_session": False},
+        )
+        await hass.async_block_till_done()
+
+    assert result3["type"] == RESULT_TYPE_FORM
+    assert result3["errors"] == {"base": "unknown"}
+
+
 async def test_config_flow_device_exists(hass):
     """Test config flow aborts on already configured devices."""
     MockConfigEntry(
@@ -159,8 +257,8 @@ async def test_config_flow_device_exists(hass):
     assert result["reason"] == "already_configured"
 
 
-async def test_bridge_ssdp(hass):
-    """Test a bridge being discovered."""
+async def test_ssdp(hass):
+    """Test a device being discovered."""
 
     with patch(
         "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
@@ -182,8 +280,8 @@ async def test_bridge_ssdp(hass):
     assert result["step_id"] == "user"
 
 
-async def test_bridge_ssdp_fail(hass):
-    """Test a bridge being discovered."""
+async def test_ssdp_fail(hass):
+    """Test a device being discovered but failing to reply."""
 
     with patch(
         "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
