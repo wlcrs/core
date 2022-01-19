@@ -73,8 +73,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "cannot_connect"
         except InvalidAuth:
             errors["base"] = "invalid_auth"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception")
+        except Exception as exception:  # pylint: disable=broad-except
+            _LOGGER.exception(exception)
             errors["base"] = "unknown"
         else:
             data = {**user_input, CONF_WEBFSAPI_URL: self.context[CONF_WEBFSAPI_URL]}
@@ -107,8 +107,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.context.update({CONF_WEBFSAPI_URL: webfsapi_url})
         except CannotConnect:
             errors["base"] = "cannot_connect"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception")
+        except Exception as exception:  # pylint: disable=broad-except
+            _LOGGER.exception(exception)
             errors["base"] = "unknown"
         else:
             return await self.async_step_device_config()
