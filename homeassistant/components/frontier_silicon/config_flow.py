@@ -8,6 +8,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components import ssdp
+from homeassistant.const import CONF_NAME
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -15,6 +16,7 @@ from .const import (
     CONF_PIN,
     CONF_USE_SESSION,
     CONF_WEBFSAPI_URL,
+    DEFAULT_PIN,
     DOMAIN,
     SSDP_ATTR_SPEAKER_NAME,
 )
@@ -37,7 +39,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 STEP_DEVICE_CONFIG_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_PIN, default="1234"): str,
+        vol.Required(CONF_PIN, default=DEFAULT_PIN): str,
         vol.Required(CONF_USE_SESSION, default=False): bool,
     }
 )
@@ -95,22 +97,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
 
-        await self.async_set_unique_id(user_input[CONF_DEVICE_URL])
-        self._abort_if_unique_id_configured()
-
         errors = {}
-
         try:
             webfsapi_url = await validate_device_url(
                 self.hass, user_input[CONF_DEVICE_URL]
             )
-            self.context.update({CONF_WEBFSAPI_URL: webfsapi_url})
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except Exception as exception:  # pylint: disable=broad-except
             _LOGGER.exception(exception)
             errors["base"] = "unknown"
         else:
+            await self.async_set_unique_id(webfsapi_url)
+            self._abort_if_unique_id_configured()
+
+            self.context.update({CONF_WEBFSAPI_URL: webfsapi_url})
             return await self.async_step_device_config()
 
         return self.async_show_form(
@@ -120,9 +121,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_ssdp(self, discovery_info: ssdp.SsdpServiceInfo) -> FlowResult:
         """Process entity discovered via SSDP."""
         device_url = discovery_info.ssdp_location
-
-        await self.async_set_unique_id(device_url)
-        self._abort_if_unique_id_configured()
 
         self.context.update(
             {
@@ -135,6 +133,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             webfsapi_url = await validate_device_url(self.hass, device_url)
 
+            await self.async_set_unique_id(webfsapi_url)
+            self._abort_if_unique_id_configured()
+
             self.context.update({CONF_WEBFSAPI_URL: webfsapi_url})
 
             return self.async_show_form(
@@ -142,3 +143,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         except Exception:  # pylint: disable=broad-except
             return self.async_abort(reason="cannot_connect")
+
+    async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
+        """Handle the import of legacy configuration.yaml entries."""
+
+        try:
+            webfsapi_url = await validate_device_url(
+                self.hass, import_info.get(CONF_DEVICE_URL)
+            )
+        except CannotConnect:
+            return self.async_abort(reason="cannot_connect")
+
+        await self.async_set_unique_id(webfsapi_url, raise_on_progress=False)
+        self._abort_if_unique_id_configured()
+
+        name = import_info[CONF_NAME]
+
+        _LOGGER.warning("Frontier Silicon %s imported from YAML config." % name)
+        return self.async_create_entry(
+            title=import_info[CONF_NAME],
+            data={**import_info, CONF_WEBFSAPI_URL: webfsapi_url},
+        )

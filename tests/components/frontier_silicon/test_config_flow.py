@@ -7,7 +7,12 @@ from homeassistant.components.frontier_silicon.config_flow import (
     CannotConnect,
     InvalidAuth,
 )
-from homeassistant.components.frontier_silicon.const import DOMAIN
+from homeassistant.components.frontier_silicon.const import (
+    CONF_DEVICE_URL,
+    CONF_USE_SESSION,
+    DOMAIN,
+)
+from homeassistant.const import CONF_NAME, CONF_PIN
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import (
     RESULT_TYPE_ABORT,
@@ -231,9 +236,9 @@ async def test_config_flow_device_exists(hass):
     """Test config flow aborts on already configured devices."""
     MockConfigEntry(
         domain="frontier_silicon",
-        unique_id="http://1.1.1.1/device",
+        unique_id="http://1.1.1.1:80/webfsapi",
         data={
-            "webfsapi_url": "http://1.1.1.1/webfsapi",
+            "webfsapi_url": "http://1.1.1.1:80/webfsapi",
             "pin": "1234",
             "use_session": False,
         },
@@ -246,15 +251,19 @@ async def test_config_flow_device_exists(hass):
     assert result["type"] == RESULT_TYPE_FORM
     assert result["errors"] is None
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {
-            "device_url": "http://1.1.1.1/device",
-        },
-    )
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        return_value="http://1.1.1.1:80/webfsapi",
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "device_url": "http://1.1.1.1/device",
+            },
+        )
 
-    assert result["type"] == "abort"
-    assert result["reason"] == "already_configured"
+        assert result["type"] == "abort"
+        assert result["reason"] == "already_configured"
 
 
 async def test_ssdp(hass):
@@ -301,3 +310,75 @@ async def test_ssdp_fail(hass):
 
     assert result["type"] == RESULT_TYPE_ABORT
     assert result["reason"] == "cannot_connect"
+
+
+async def test_import(hass: HomeAssistant) -> None:
+    """Test import."""
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        return_value="http://1.1.1.1:80/webfsapi",
+    ):
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_IMPORT},
+            data={
+                CONF_DEVICE_URL: "http://1.1.1.1:80/device",
+                CONF_PIN: "1234",
+                CONF_USE_SESSION: False,
+                CONF_NAME: "Test name",
+            },
+        )
+
+        assert result["type"] == RESULT_TYPE_CREATE_ENTRY
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        side_effect=CannotConnect,
+    ):
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_IMPORT},
+            data={
+                CONF_DEVICE_URL: "http://1.1.1.1:80/device",
+                CONF_PIN: "1234",
+                CONF_USE_SESSION: False,
+                CONF_NAME: "Test name",
+            },
+        )
+
+        assert result["type"] == RESULT_TYPE_ABORT
+        assert result["reason"] == "cannot_connect"
+
+
+async def test_import_already_exists(hass: HomeAssistant) -> None:
+    """Test import of device which already exists."""
+    MockConfigEntry(
+        domain="frontier_silicon",
+        unique_id="http://1.1.1.1:80/webfsapi",
+        data={
+            "webfsapi_url": "http://1.1.1.1:80/webfsapi",
+            "pin": "1234",
+            "use_session": False,
+        },
+    ).add_to_hass(hass)
+
+    with patch(
+        "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
+        return_value="http://1.1.1.1:80/webfsapi",
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_IMPORT},
+            data={
+                CONF_DEVICE_URL: "http://1.1.1.1:80/device",
+                CONF_PIN: "1234",
+                CONF_USE_SESSION: False,
+                CONF_NAME: "Test name",
+            },
+        )
+
+        assert result["type"] == "abort"
+        assert result["reason"] == "already_configured"
