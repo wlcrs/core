@@ -18,14 +18,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-from .const import (
-    CONF_DEVICE_URL,
-    CONF_PIN,
-    CONF_USE_SESSION,
-    CONF_WEBFSAPI_URL,
-    DEFAULT_PIN,
-    DOMAIN,
-)
+from .const import CONF_PIN, CONF_WEBFSAPI_URL, DEFAULT_PIN, DEFAULT_PORT, DOMAIN
 
 PLATFORMS = [Platform.MEDIA_PLAYER]
 
@@ -34,20 +27,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Perform migration from YAML config to Config Flow entity."""
 
     async def _migrate_entry(entry_to_migrate):
-        host = entry_to_migrate.get(CONF_HOST)
-        port = entry_to_migrate.get(CONF_PORT, 80)
-        name = entry_to_migrate.get(CONF_NAME)
-
-        device_url = f"http://{host}:{port}/device"
-
         await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": SOURCE_IMPORT},
             data={
-                CONF_NAME: name,
-                CONF_DEVICE_URL: device_url,
+                CONF_NAME: entry_to_migrate.get(CONF_NAME),
+                CONF_HOST: entry_to_migrate.get(CONF_HOST),
+                CONF_PORT: entry_to_migrate.get(CONF_PORT, DEFAULT_PORT),
                 CONF_PIN: entry_to_migrate.get(CONF_PASSWORD, DEFAULT_PIN),
-                CONF_USE_SESSION: False,
             },
         )
 
@@ -71,9 +58,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     webfsapi_url = entry.data[CONF_WEBFSAPI_URL]
     pin = entry.data[CONF_PIN]
-    use_session = entry.data[CONF_USE_SESSION]
 
-    afsapi = AFSAPI(webfsapi_url, pin, use_session)
+    afsapi = AFSAPI(webfsapi_url, pin)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = afsapi

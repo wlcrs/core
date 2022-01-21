@@ -5,11 +5,10 @@ from typing import Any
 
 from afsapi import AFSAPI, FSApiException
 
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
 
-async def validate_device_url(hass: HomeAssistant, device_url: str | None) -> str:
+async def validate_device_url(device_url: str | None) -> str:
     """Validate the device_url."""
 
     try:
@@ -18,16 +17,14 @@ async def validate_device_url(hass: HomeAssistant, device_url: str | None) -> st
         raise CannotConnect from fsapi_exception
 
 
-async def validate_device_config(
-    hass: HomeAssistant, webfsapi_url: str, pin: str, force_with_session: bool
-) -> dict[str, Any]:
+async def validate_device_config(webfsapi_url: str, pin: str) -> dict[str, Any]:
     """Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
 
     try:
-        afsapi = AFSAPI(webfsapi_url, pin, force_with_session)
+        afsapi = AFSAPI(webfsapi_url, pin)
 
         friendly_name = await afsapi.get_friendly_name()
 
