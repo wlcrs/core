@@ -109,24 +109,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_ssdp(self, discovery_info: ssdp.SsdpServiceInfo) -> FlowResult:
         """Process entity discovered via SSDP."""
+
         device_url = discovery_info.ssdp_location
 
-        self.context.update(
-            {
-                "title_placeholders": {
-                    "name": discovery_info.upnp.get(SSDP_ATTR_SPEAKER_NAME)
-                }
-            }
-        )
+        speaker_name = discovery_info.ssdp_headers.get(SSDP_ATTR_SPEAKER_NAME)
+        self.context["title_placeholders"] = {"name": speaker_name}
 
         try:
             self._webfsapi_url = await validate_device_url(device_url)
         except ConnectionError:
             return self.async_abort(reason="cannot_connect")
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception(
-                "Unexpected failure to retrieve webfsapi url from discovered device"
-            )
+        except Exception as exception:  # pylint: disable=broad-except
+            _LOGGER.exception(exception)
             return self.async_abort(reason="unknown")
 
         # For manually added devices the unique_id is the webfsapi_url,
@@ -164,6 +158,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             info = await validate_device_config(self._webfsapi_url, DEFAULT_PIN)
 
             self._name = info["title"]
+
+            self.context["title_placeholders"] = {"name": self._name}
+
             if show_confirm:
                 return await self.async_step_confirm()
             else:
@@ -177,7 +174,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Allow the user to confirm adding the device."""
-        _LOGGER.debug("async_step_confirm: %s", user_input)
 
         if user_input is not None:
             return await self._create_entry()
