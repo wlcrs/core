@@ -3,14 +3,15 @@
     "step": {
       "user": {
         "data": {
-          "device_url": "Device URL"
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]"
         }
       },
       "device_config": {
         "title": "Device Configuration",
+        "description":"The pin can be found via 'MENU button > Main Menu > System setting > Network > NetRemote PIN setup'",
         "data": {
-          "pin": "[%key:common::config_flow::data::pin%]",
-          "use_session": "Force session usage"
+          "pin": "[%key:common::config_flow::data::pin%]"
         }
       }
     },

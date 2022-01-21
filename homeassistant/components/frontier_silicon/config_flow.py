@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from afsapi import ConnectionError, InvalidPinException
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -20,12 +21,7 @@ from .const import (
     SSDP_ATTR_SPEAKER_NAME,
     SSDP_ST,
 )
-from .device_validation import (
-    CannotConnect,
-    InvalidAuth,
-    validate_device_config,
-    validate_device_url,
-)
+from .device_validation import validate_device_config, validate_device_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +37,6 @@ STEP_DEVICE_CONFIG_DATA_SCHEMA = vol.Schema(
         vol.Required(
             CONF_PIN,
             default=DEFAULT_PIN,
-            description="Can be found via 'MENU button > Main Menu > System setting > Network > NetRemote PIN setup'",
         ): str,
     }
 )
@@ -64,10 +59,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device_url = f"http://{import_info[CONF_HOST]}:{import_info[CONF_PORT]}/device"
         try:
             self._webfsapi_url = await validate_device_url(device_url)
-        except CannotConnect:
+        except ConnectionError:
             return self.async_abort(reason="cannot_connect")
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception while fetching webfsapi url")
+        except Exception as exception:  # pylint: disable=broad-except
+            _LOGGER.exception(exception)
             return self.async_abort(reason="unknown")
 
         # For manually added devices the unique_id is the webfsapi_url,
@@ -94,10 +89,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/device"
         try:
             self._webfsapi_url = await validate_device_url(device_url)
-        except CannotConnect:
+        except ConnectionError:
             errors["base"] = "cannot_connect"
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected exception while fetching webfsapi url")
+        except Exception as exception:  # pylint: disable=broad-except
+            _LOGGER.exception(exception)
             errors["base"] = "unknown"
         else:
 
@@ -126,7 +121,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             self._webfsapi_url = await validate_device_url(device_url)
-        except CannotConnect:
+        except ConnectionError:
             return self.async_abort(reason="cannot_connect")
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception(
@@ -173,7 +168,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self.async_step_confirm()
             else:
                 return await self._create_entry()
-        except InvalidAuth:
+        except InvalidPinException:
             pass  # Ask for a PIN
 
         return await self.async_step_device_config()
@@ -210,9 +205,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             info = await validate_device_config(
                 self._webfsapi_url, user_input[CONF_PIN]
             )
-        except CannotConnect:
+        except ConnectionError:
             errors["base"] = "cannot_connect"
-        except InvalidAuth:
+        except InvalidPinException:
             errors["base"] = "invalid_auth"
         except Exception as exception:  # pylint: disable=broad-except
             _LOGGER.exception(exception)

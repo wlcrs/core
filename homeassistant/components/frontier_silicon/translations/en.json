@@ -11,14 +11,15 @@
         "step": {
             "device_config": {
                 "data": {
-                    "pin": "PIN Code",
-                    "use_session": "Force session usage"
+                    "pin": "PIN Code"
                 },
+                "description": "The pin can be found via 'MENU button > Main Menu > System setting > Network > NetRemote PIN setup'",
                 "title": "Device Configuration"
             },
             "user": {
                 "data": {
-                    "device_url": "Device URL"
+                    "host": "Host",
+                    "port": "Port"
                 }
             }
         }

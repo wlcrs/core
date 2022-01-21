@@ -1,12 +1,10 @@
 """Test the Frontier Silicon config flow."""
 from unittest.mock import AsyncMock, patch
 
+from afsapi import ConnectionError, InvalidPinException
+
 from homeassistant import config_entries
 from homeassistant.components import ssdp
-from homeassistant.components.frontier_silicon.config_flow import (
-    CannotConnect,
-    InvalidAuth,
-)
 from homeassistant.components.frontier_silicon.const import (
     CONF_WEBFSAPI_URL,
     DEFAULT_PIN,
@@ -29,7 +27,7 @@ valid_validate_device_url = patch(
 
 invalid_validate_device_url = patch(
     "homeassistant.components.frontier_silicon.config_flow.validate_device_url",
-    side_effect=CannotConnect,
+    side_effect=ConnectionError,
 )
 
 unexpected_error_validate_device_url = patch(
@@ -56,12 +54,12 @@ valid_validate_device_config = patch(
 
 invalid_pin_validate_device_config = patch(
     "homeassistant.components.frontier_silicon.config_flow.validate_device_config",
-    side_effect=InvalidAuth,
+    side_effect=InvalidPinException,
 )
 
 connect_error_validate_device_config = patch(
     "homeassistant.components.frontier_silicon.config_flow.validate_device_config",
-    side_effect=CannotConnect,
+    side_effect=ConnectionError,
 )
 
 unexpected_error_validate_device_config = patch(
