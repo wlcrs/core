@@ -5,10 +5,15 @@
         },
         "error": {
             "cannot_connect": "Failed to connect",
+            "discovery_error": "Failed to discover a matching DLNA device",
             "invalid_auth": "Invalid authentication",
             "unknown": "Unexpected error"
         },
+        "flow_title": "{name}",
         "step": {
+            "confirm": {
+                "description": "Do you want to start set up?"
+            },
             "device_config": {
                 "data": {
                     "pin": "PIN Code"
@@ -20,7 +25,8 @@
                 "data": {
                     "host": "Host",
                     "port": "Port"
-                }
+                },
+                "title": "Frontier Silicon Setup"
             }
         }
     }
