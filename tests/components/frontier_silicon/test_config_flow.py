@@ -448,3 +448,39 @@ async def test_unignore_flow_invalid(hass: HomeAssistant):
 
     assert result["type"] == RESULT_TYPE_ABORT
     assert result["reason"] == "unknown"
+
+
+async def test_reauth_flow(hass: HomeAssistant):
+    """Test reauth flow."""
+
+    mock_entry = MockConfigEntry(
+        domain="frontier_silicon",
+        unique_id="http://1.1.1.1:80/webfsapi",
+        data={
+            "webfsapi_url": "http://1.1.1.1:80/webfsapi",
+            "pin": "1234",
+            "use_session": False,
+        },
+    )
+    mock_entry.add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_REAUTH,
+            "unique_id": mock_entry.unique_id,
+            "entry_id": mock_entry.entry_id,
+        },
+        data=mock_entry.data,
+    )
+    assert result["type"] == RESULT_TYPE_FORM
+    assert result["step_id"] == "device_config"
+
+    with valid_validate_device_config:
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_PIN: "4242"},
+        )
+        assert result2["type"] == RESULT_TYPE_ABORT
+        assert result2["reason"] == "reauth_successful"
+        assert mock_entry.data[CONF_PIN] == "4242"

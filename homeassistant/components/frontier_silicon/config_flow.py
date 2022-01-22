@@ -53,6 +53,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._webfsapi_url: str | None = None
         self._name: str | None = None
 
+        # Only used in reauth flows:
+        self._reauth_entry: config_entries.ConfigEntry | None = None
+
     async def async_step_import(self, import_info: dict[str, Any]) -> FlowResult:
         """Handle the import of legacy configuration.yaml entries."""
 
@@ -224,7 +227,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         assert self._name is not None
         assert self._webfsapi_url is not None
 
-        return self.async_create_entry(
-            title=self._name,
-            data={CONF_WEBFSAPI_URL: self._webfsapi_url, CONF_PIN: pin or DEFAULT_PIN},
+        data = {CONF_WEBFSAPI_URL: self._webfsapi_url, CONF_PIN: pin or DEFAULT_PIN}
+
+        if self._reauth_entry:
+            self.hass.config_entries.async_update_entry(self._reauth_entry, data=data)
+            await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+            return self.async_abort(reason="reauth_successful")
+
+        return self.async_create_entry(title=self._name, data=data)
+
+    async def async_step_reauth(self, config: dict[str, Any] | None = None):
+        """Perform reauth upon an API authentication error."""
+        assert config is not None
+
+        self._webfsapi_url = config.get(CONF_WEBFSAPI_URL)
+        assert self._webfsapi_url
+
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
         )
+        return await self.async_step_device_config()
