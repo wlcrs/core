@@ -1,7 +1,7 @@
 """Support for Frontier Silicon Devices (Medion, Hama, Auna,...)."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from afsapi import (
@@ -52,7 +52,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DEFAULT_PIN, DEFAULT_PORT, DOMAIN
 
 SUPPORT_FRONTIER_SILICON = (
     SUPPORT_PAUSE
@@ -73,19 +73,18 @@ SUPPORT_FRONTIER_SILICON = (
     | SUPPORT_REPEAT_SET
 )
 
-DEFAULT_PORT = 80
-DEFAULT_PASSWORD = "1234"
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
-        vol.Optional(CONF_PASSWORD, default=DEFAULT_PASSWORD): cv.string,
+        vol.Optional(CONF_PASSWORD, default=DEFAULT_PIN): cv.string,
         vol.Optional(CONF_NAME): cv.string,
     }
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+SCAN_INTERVAL = timedelta(seconds=15)
 
 
 async def async_setup_entry(
