@@ -12,10 +12,15 @@ from afsapi import (
 )
 import voluptuous as vol
 
-from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerEntity
+from homeassistant.components.media_player import (
+    PLATFORM_SCHEMA,
+    BrowseError,
+    MediaPlayerEntity,
+)
 from homeassistant.components.media_player.const import (
-    MEDIA_TYPE_MUSIC,
+    MEDIA_TYPE_CHANNEL,
     REPEAT_MODE_OFF,
+    SUPPORT_BROWSE_MEDIA,
     SUPPORT_NEXT_TRACK,
     SUPPORT_PAUSE,
     SUPPORT_PLAY,
@@ -52,7 +57,8 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DEFAULT_PIN, DEFAULT_PORT, DOMAIN
+from .browse_media import browse_node, browse_top_level
+from .const import DEFAULT_PIN, DEFAULT_PORT, DOMAIN, MEDIA_TYPE_PRESET
 
 SUPPORT_FRONTIER_SILICON = (
     SUPPORT_PAUSE
@@ -71,6 +77,7 @@ SUPPORT_FRONTIER_SILICON = (
     | SUPPORT_SELECT_SOUND_MODE
     | SUPPORT_SHUFFLE_SET
     | SUPPORT_REPEAT_SET
+    | SUPPORT_BROWSE_MEDIA
 )
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
@@ -110,7 +117,7 @@ class AFSAPIDevice(MediaPlayerEntity):
             identifiers={(DOMAIN, afsapi.webfsapi_endpoint)},
             name=config_entry.title,
         )
-        self._attr_media_content_type = MEDIA_TYPE_MUSIC
+        self._attr_media_content_type = MEDIA_TYPE_CHANNEL
         self._attr_supported_features = SUPPORT_FRONTIER_SILICON
         self._attr_available = True
 
@@ -327,3 +334,44 @@ class AFSAPIDevice(MediaPlayerEntity):
     async def async_select_sound_mode(self, sound_mode):
         """Select EQ Preset."""
         await self._afsapi.set_eq_preset(self.__sound_modes_by_label[sound_mode])
+
+    async def async_browse_media(self, media_content_type=None, media_content_id=None):
+        """Browse media library and preset stations."""
+        if media_content_type in (None, "library"):
+            return await browse_top_level(self._attr_source, self._afsapi)
+
+        return await browse_node(self._afsapi, media_content_type, media_content_id)
+
+    async def async_play_media(self, media_type, media_id, **kwargs):
+        """Play selected media or channel."""
+        supported_media_types = [MEDIA_TYPE_CHANNEL, MEDIA_TYPE_PRESET]
+
+        if media_type not in supported_media_types:
+            _LOGGER.error(
+                "Got %s, but frontier_silicon only supports playing media types: %s",
+                media_type,
+                supported_media_types,
+            )
+            return
+
+        keys = media_id.split("/")
+
+        # check if we need to change mode
+        desired_source = keys[0]
+        if self._attr_source != desired_source:
+            await self.async_select_source(desired_source)
+
+        if media_type == MEDIA_TYPE_PRESET:
+            if len(keys) != 2:
+                raise BrowseError("Presets can only have 1 level")
+
+            # Keys of presets are 0-based, while the list shown on the device starts from 1
+            preset = keys[-1] - 1
+
+            result = await self._afsapi.select_preset(preset)
+        else:
+            result = await self._afsapi.nav_select_item_via_path(keys[1:])
+
+        await self.async_update()
+
+        return result

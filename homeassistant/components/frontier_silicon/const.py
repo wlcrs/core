@@ -14,3 +14,5 @@ DEFAULT_PORT = 80
 DEFAULT_TIMEOUT = 2  # in seconds
 
 DATA_AFSAPI_CLIENT = "client"
+
+MEDIA_TYPE_PRESET = "preset"

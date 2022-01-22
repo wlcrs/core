@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import asyncio
 
-from afsapi import AFSAPI, ConnectionError as FSConnectionError, InvalidPinException
+from afsapi import (
+    AFSAPI,
+    ConnectionError as FSConnectionError,
+    FSApiException,
+    InvalidPinException,
+)
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
@@ -68,6 +73,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise PlatformNotReady from exception
     except InvalidPinException as exception:
         raise ConfigEntryAuthFailed(exception) from exception
+
+    try:
+        await afsapi.nav_reset()
+    except FSApiException:
+        pass
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = afsapi

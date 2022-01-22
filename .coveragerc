@@ -398,6 +398,7 @@ omit =
     homeassistant/components/fritzbox_callmonitor/sensor.py
     homeassistant/components/frontier_silicon/__init__.py
     homeassistant/components/frontier_silicon/media_player.py
+    homeassistant/components/frontier_silicon/browse_media.py
     homeassistant/components/frontier_silicon/device_validation.py
     homeassistant/components/futurenow/light.py
     homeassistant/components/garadget/cover.py
