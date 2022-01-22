@@ -2,8 +2,14 @@
 from __future__ import annotations
 
 from datetime import datetime
+import logging
 
-from afsapi import AFSAPI, FSApiException, PlayState
+from afsapi import (
+    AFSAPI,
+    ConnectionError as FSConnectionError,
+    FSApiException,
+    PlayState,
+)
 import voluptuous as vol
 
 from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerEntity
@@ -38,6 +44,7 @@ from homeassistant.const import (
     STATE_OPENING,
     STATE_PAUSED,
     STATE_PLAYING,
+    STATE_UNAVAILABLE,
     STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
@@ -78,6 +85,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -104,6 +113,7 @@ class AFSAPIDevice(MediaPlayerEntity):
         )
         self._attr_media_content_type = MEDIA_TYPE_MUSIC
         self._attr_supported_features = SUPPORT_FRONTIER_SILICON
+        self._attr_available = True
 
         self._attr_name = None
         self._attr_unique_id = None
@@ -138,47 +148,63 @@ class AFSAPIDevice(MediaPlayerEntity):
         """Get the latest date and update device state."""
         afsapi = self._afsapi
 
-        if not self._attr_name:
-            self._attr_name = await afsapi.get_friendly_name()
-
-        if not self._attr_unique_id:
-            try:
-                self._attr_unique_id = await afsapi.get_radio_id()
-            except FSApiException:
-                self._attr_unique_id = self._attr_name
-
-        if not self._attr_source_list:
-            self.__modes_by_label = {
-                mode.label: mode.key for mode in await afsapi.get_modes()
-            }
-            self._attr_source_list = list(self.__modes_by_label.keys())
-
-        if not self._attr_sound_mode_list:
-            self.__sound_modes_by_label = {
-                sound_mode.label: sound_mode.key
-                for sound_mode in await afsapi.get_equalisers()
-            }
-            self._attr_sound_mode_list = list(self.__sound_modes_by_label.keys())
-
-        # The API seems to include 'zero' in the number of steps (e.g. if the range is
-        # 0-40 then get_volume_steps returns 41) subtract one to get the max volume.
-        # If call to get_volume fails set to 0 and try again next time.
-        if not self._max_volume:
-            self._max_volume = int(await afsapi.get_volume_steps() or 1) - 1
-
-        if await afsapi.get_power():
-            status = await afsapi.get_play_status()
-            self._attr_state = {
-                PlayState.PLAYING: STATE_PLAYING,
-                PlayState.PAUSED: STATE_PAUSED,
-                PlayState.STOPPED: STATE_IDLE,
-                PlayState.LOADING: STATE_OPENING,
-                None: STATE_IDLE,
-            }.get(status, STATE_UNKNOWN)
+        try:
+            if await afsapi.get_power():
+                status = await afsapi.get_play_status()
+                self._attr_state = {
+                    PlayState.PLAYING: STATE_PLAYING,
+                    PlayState.PAUSED: STATE_PAUSED,
+                    PlayState.STOPPED: STATE_IDLE,
+                    PlayState.LOADING: STATE_OPENING,
+                    None: STATE_IDLE,
+                }.get(status, STATE_UNKNOWN)
+            else:
+                self._attr_state = STATE_OFF
+        except FSConnectionError:
+            if self._attr_available:
+                _LOGGER.warning(
+                    "Could not connect to %s. Did it go offline?",
+                    self._attr_name or afsapi.webfsapi_endpoint,
+                )
+                self._attr_state = STATE_UNAVAILABLE
+                self._attr_available = False
         else:
-            self._attr_state = STATE_OFF
+            if not self._attr_available:
+                _LOGGER.info(
+                    "Reconnected to %s",
+                    self._attr_name or afsapi.webfsapi_endpoint,
+                )
 
-        if self._attr_state != STATE_OFF:
+                self._attr_available = True
+            if not self._attr_name:
+                self._attr_name = await afsapi.get_friendly_name()
+
+            if not self._attr_unique_id:
+                try:
+                    self._attr_unique_id = await afsapi.get_radio_id()
+                except FSApiException:
+                    self._attr_unique_id = self._attr_name
+
+            if not self._attr_source_list:
+                self.__modes_by_label = {
+                    mode.label: mode.key for mode in await afsapi.get_modes()
+                }
+                self._attr_source_list = list(self.__modes_by_label.keys())
+
+            if not self._attr_sound_mode_list:
+                self.__sound_modes_by_label = {
+                    sound_mode.label: sound_mode.key
+                    for sound_mode in await afsapi.get_equalisers()
+                }
+                self._attr_sound_mode_list = list(self.__sound_modes_by_label.keys())
+
+            # The API seems to include 'zero' in the number of steps (e.g. if the range is
+            # 0-40 then get_volume_steps returns 41) subtract one to get the max volume.
+            # If call to get_volume fails set to 0 and try again next time.
+            if not self._max_volume:
+                self._max_volume = int(await afsapi.get_volume_steps() or 1) - 1
+
+        if self._attr_state not in [STATE_OFF, STATE_UNAVAILABLE]:
             info_name = await afsapi.get_play_name()
             info_text = await afsapi.get_play_text()
 
