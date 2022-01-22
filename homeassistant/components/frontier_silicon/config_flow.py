@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from afsapi import ConnectionError, InvalidPinException
+from afsapi import ConnectionError as FSConnectionError, InvalidPinException
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -62,7 +62,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device_url = f"http://{import_info[CONF_HOST]}:{import_info[CONF_PORT]}/device"
         try:
             self._webfsapi_url = await validate_device_url(device_url)
-        except ConnectionError:
+        except FSConnectionError:
             return self.async_abort(reason="cannot_connect")
         except Exception as exception:  # pylint: disable=broad-except
             _LOGGER.exception(exception)
@@ -75,7 +75,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._name = import_info[CONF_NAME]
 
-        _LOGGER.warning("Frontier Silicon %s imported from YAML config." % self._name)
+        _LOGGER.warning("Frontier Silicon %s imported from YAML config", self._name)
         return await self._create_entry(pin=import_info[CONF_PIN])
 
     async def async_step_user(
@@ -92,7 +92,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/device"
         try:
             self._webfsapi_url = await validate_device_url(device_url)
-        except ConnectionError:
+        except FSConnectionError:
             errors["base"] = "cannot_connect"
         except Exception as exception:  # pylint: disable=broad-except
             _LOGGER.exception(exception)
@@ -120,7 +120,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             self._webfsapi_url = await validate_device_url(device_url)
-        except ConnectionError:
+        except FSConnectionError:
             return self.async_abort(reason="cannot_connect")
         except Exception as exception:  # pylint: disable=broad-except
             _LOGGER.exception(exception)
@@ -166,8 +166,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if show_confirm:
                 return await self.async_step_confirm()
-            else:
-                return await self._create_entry()
+
+            return await self._create_entry()
         except InvalidPinException:
             pass  # Ask for a PIN
 
@@ -204,7 +204,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             info = await validate_device_config(
                 self._webfsapi_url, user_input[CONF_PIN]
             )
-        except ConnectionError:
+        except FSConnectionError:
             errors["base"] = "cannot_connect"
         except InvalidPinException:
             errors["base"] = "invalid_auth"
