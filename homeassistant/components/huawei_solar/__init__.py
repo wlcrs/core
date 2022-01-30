@@ -17,13 +17,20 @@ from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import CONF_SLAVE_IDS, DATA_UPDATE_COORDINATORS, DOMAIN, UPDATE_INTERVAL
+from .const import (
+    CONF_SLAVE_IDS,
+    DATA_UPDATE_COORDINATORS,
+    DOMAIN,
+    SERVICES,
+    UPDATE_INTERVAL,
+)
+from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.NUMBER, Platform.SWITCH]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -34,6 +41,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             host=entry.data[CONF_HOST],
             port=entry.data[CONF_PORT],
             slave_id=entry.data[CONF_SLAVE_IDS][0],
+            username="installer",
+            password="00000a",
         )
 
         primary_bridge_device_infos = _compute_device_infos(
@@ -73,6 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from err
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await async_setup_services(hass, bridges_with_device_infos)
 
     return True
 
@@ -85,6 +95,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ]
         for update_coordinator in update_coordinators:
             await update_coordinator.bridge.stop()
+
+        for service in SERVICES:
+            if hass.services.has_service(DOMAIN, service):
+                hass.services.async_remove(DOMAIN, service)
 
         hass.data[DOMAIN].pop(entry.entry_id)
 
