@@ -134,7 +134,6 @@ class AFSAPIDevice(MediaPlayerEntity):
         self._attr_media_artist = None
         self._attr_media_album_name = None
 
-        self._attr_source = None
         self._attr_is_volume_muted = None
         self._attr_media_image_url = None
 
@@ -197,6 +196,10 @@ class AFSAPIDevice(MediaPlayerEntity):
                 }
                 self._attr_source_list = list(self.__modes_by_label.keys())
 
+                # Getting the current mode upon initialisation allows us to set the
+                # path correctly when browsing
+                self._attr_source = (await afsapi.get_mode()).label
+
             if not self._attr_sound_mode_list:
                 self.__sound_modes_by_label = {
                     sound_mode.label: sound_mode.key
@@ -239,7 +242,8 @@ class AFSAPIDevice(MediaPlayerEntity):
             self._attr_media_artist = None
             self._attr_media_album_name = None
 
-            self._attr_source = None
+            # Don't reset _attr_source as it allows for browsing the player
+            # while the device is shut off.
 
             self._attr_sound_mode = None
             self._attr_is_volume_muted = None
@@ -366,7 +370,7 @@ class AFSAPIDevice(MediaPlayerEntity):
                 raise BrowseError("Presets can only have 1 level")
 
             # Keys of presets are 0-based, while the list shown on the device starts from 1
-            preset = keys[-1] - 1
+            preset = int(keys[-1]) - 1
 
             result = await self._afsapi.select_preset(preset)
         else:

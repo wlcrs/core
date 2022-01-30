@@ -81,7 +81,8 @@ async def browse_top_level(current_mode, afsapi: AFSAPI):
             title=name,
             media_class=MEDIA_CLASS_DIRECTORY,
             media_content_type=type_,
-            media_content_id=current_mode,
+            # latter can happen if initialisation has not been fully done yet.
+            media_content_id=current_mode or "unknown",
             can_play=False,
             can_expand=True,
         )
