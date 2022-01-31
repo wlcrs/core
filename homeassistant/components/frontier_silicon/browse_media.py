@@ -36,7 +36,9 @@ def _item_preset_payload(preset: Preset, parent_key=None) -> BrowseMedia:
         title=preset.name,
         media_class=MEDIA_CLASS_CHANNEL,
         media_content_type=MEDIA_TYPE_PRESET,
-        media_content_id=f"{parent_key}/{preset.key}",
+        # We add 1 to the preset key to keep it in sync with the numbering shown
+        # on the interface of the device
+        media_content_id=f"{parent_key}/{int(preset.key)+1}",
         can_play=True,
         can_expand=False,
     )

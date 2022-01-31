@@ -149,6 +149,8 @@ class AFSAPIDevice(MediaPlayerEntity):
         self.__modes_by_label = None
         self.__sound_modes_by_label = None
 
+        self._info_name = None
+
     async def async_update(self):
         """Get the latest date and update device state."""
         afsapi = self._afsapi
@@ -218,6 +220,19 @@ class AFSAPIDevice(MediaPlayerEntity):
             info_text = await afsapi.get_play_text()
 
             self._attr_media_title = " - ".join(filter(None, [info_name, info_text]))
+
+            # Reset the media_content_id and media_content_type if the `info_name`
+            # has changed, as this normally means the channel has been changed.
+            if info_name != self._info_name:
+                _LOGGER.debug(
+                    "Detected name change: from '%s' to '%s'",
+                    self._info_name,
+                    info_name,
+                )
+                self._attr_media_content_id = None
+                self._attr_media_content_type = None
+                self._info_name = info_name
+
             self._attr_media_artist = await afsapi.get_play_artist()
             self._attr_media_album_name = await afsapi.get_play_album()
 
@@ -360,10 +375,8 @@ class AFSAPIDevice(MediaPlayerEntity):
 
         keys = media_id.split("/")
 
-        # check if we need to change mode
         desired_source = keys[0]
-        if self._attr_source != desired_source:
-            await self.async_select_source(desired_source)
+        await self.async_select_source(desired_source)  # this also powers on the device
 
         if media_type == MEDIA_TYPE_PRESET:
             if len(keys) != 2:
@@ -378,4 +391,8 @@ class AFSAPIDevice(MediaPlayerEntity):
 
         await self.async_update()
 
+        # Only set these values after the update to prevent them from being overwritten
+        # due to the info_name change
+        self._attr_media_content_type = media_type
+        self._attr_media_content_id = media_id
         return result
