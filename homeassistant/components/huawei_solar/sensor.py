@@ -44,7 +44,7 @@ class HuaweiSolarSensorEntityDescription(SensorEntityDescription):
 # The order of these lists matters, as they need to be in ascending order wrt. to their modbus-register.
 
 
-INVERTER_ENTITY_DESCRIPTIONS: tuple[HuaweiSolarSensorEntityDescription, ...] = (
+INVERTER_SENSOR_DESCRIPTIONS: tuple[HuaweiSolarSensorEntityDescription, ...] = (
     HuaweiSolarSensorEntityDescription(
         key=rn.INPUT_POWER,
         name="Input Power",
@@ -242,7 +242,7 @@ SINGLE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
     HuaweiSolarSensorEntityDescription(
         key=rn.POWER_METER_ACTIVE_POWER,
-        name="Active Power",
+        name="Grid Active Power",
         icon="mdi:flash",
         native_unit_of_measurement=POWER_WATT,
         device_class=SensorDeviceClass.POWER,
@@ -250,7 +250,7 @@ SINGLE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
     HuaweiSolarSensorEntityDescription(
         key=rn.POWER_METER_REACTIVE_POWER,
-        name="Reactive Power",
+        name="Grid Reactive Power",
         icon="mdi:flash",
         native_unit_of_measurement=POWER_VOLT_AMPERE_REACTIVE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -258,7 +258,7 @@ SINGLE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
     HuaweiSolarSensorEntityDescription(
         key=rn.ACTIVE_GRID_POWER_FACTOR,
-        name="Power Factor",
+        name="Grid Power Factor",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
@@ -361,7 +361,7 @@ THREE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
     HuaweiSolarSensorEntityDescription(
         key=rn.POWER_METER_ACTIVE_POWER,
-        name="Active Power",
+        name="Grid Active Power",
         icon="mdi:flash",
         native_unit_of_measurement=POWER_WATT,
         device_class=SensorDeviceClass.POWER,
@@ -369,7 +369,7 @@ THREE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
     HuaweiSolarSensorEntityDescription(
         key=rn.POWER_METER_REACTIVE_POWER,
-        name="Reactive Power",
+        name="Grid Reactive Power",
         icon="mdi:flash",
         native_unit_of_measurement=POWER_VOLT_AMPERE_REACTIVE,
         device_class=SensorDeviceClass.POWER,
@@ -378,7 +378,7 @@ THREE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
     HuaweiSolarSensorEntityDescription(
         key=rn.ACTIVE_GRID_POWER_FACTOR,
-        name="Power Factor",
+        name="Grid Power Factor",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
@@ -464,7 +464,7 @@ THREE_PHASE_METER_ENTITY_DESCRIPTIONS: tuple[
     ),
 )
 
-BATTERY_ENTITY_DESCRIPTIONS: tuple[HuaweiSolarSensorEntityDescription, ...] = (
+BATTERY_SENSOR_DESCRIPTIONS: tuple[HuaweiSolarSensorEntityDescription, ...] = (
     HuaweiSolarSensorEntityDescription(
         key=rn.STORAGE_STATE_OF_CAPACITY,
         name="Battery State of Capacity",
@@ -548,7 +548,7 @@ async def async_setup_entry(
         bridge = update_coordinator.bridge
         device_infos = update_coordinator.device_infos
 
-        for entity_description in INVERTER_ENTITY_DESCRIPTIONS:
+        for entity_description in INVERTER_SENSOR_DESCRIPTIONS:
             entities_to_add.append(
                 HuaweiSolarSensor(
                     update_coordinator, entity_description, device_infos["inverter"]
@@ -590,7 +590,7 @@ async def async_setup_entry(
                 )
 
         if bridge.battery_1_type != rv.StorageProductModel.NONE:
-            for entity_description in BATTERY_ENTITY_DESCRIPTIONS:
+            for entity_description in BATTERY_SENSOR_DESCRIPTIONS:
                 entities_to_add.append(
                     HuaweiSolarSensor(
                         update_coordinator,
