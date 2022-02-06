@@ -53,6 +53,7 @@ PLATFORMS: list[Platform] = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Huawei Solar from a config entry."""
 
+    primary_bridge = None
     try:
         primary_bridge = await HuaweiSolarBridge.create(
             host=entry.data[CONF_HOST],
@@ -69,7 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 except InvalidCredentials as err:
                     raise ConfigEntryAuthFailed() from err
 
-        primary_bridge_device_infos = await _compute_device_infos(
+        primary_bridge_device_infos = _compute_device_infos(
             primary_bridge,
             connecting_inverter_device_id=None,
         )
@@ -83,9 +84,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 primary_bridge.client, extra_slave_id
             )
 
-            extra_bridge_device_infos = await _compute_device_infos(
-                primary_bridge,
-                connecting_inverter_device_id=(DOMAIN, primary_bridge.serial_number),
+            extra_bridge_device_infos = _compute_device_infos(
+                extra_bridge,
+                connecting_inverter_device_id=(
+                    DOMAIN,
+                    primary_bridge.serial_number,
+                ),
             )
 
             bridges_with_device_infos.append((extra_bridge, extra_bridge_device_infos))
@@ -103,7 +107,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             DATA_UPDATE_COORDINATORS: update_coordinators,
         }
     except HuaweiSolarException as err:
+        if primary_bridge is not None:
+            await primary_bridge.stop()
+
         raise ConfigEntryNotReady from err
+    except Exception as err:
+        # always try to stop the bridge, as it will keep retrying
+        # in the background otherwise!
+        if primary_bridge is not None:
+            await primary_bridge.stop()
+
+        raise err
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     await async_setup_services(hass, entry, bridges_with_device_infos)
@@ -137,19 +151,17 @@ class HuaweiInverterBridgeDeviceInfos(TypedDict):
     connected_energy_storage: DeviceInfo | None
 
 
-async def _compute_device_infos(
+def _compute_device_infos(
     bridge: HuaweiSolarBridge,
     connecting_inverter_device_id: tuple[str, str] | None,
 ) -> HuaweiInverterBridgeDeviceInfos:
     """Create the correct DeviceInfo-objects, which can be used to correctly assign to entities in this integration."""
 
-    info = await bridge.get_info()
-
     inverter_device_info = DeviceInfo(
         identifiers={(DOMAIN, bridge.serial_number)},
-        name=info["model_name"],
+        name=bridge.model_name,
         manufacturer="Huawei",
-        model=info["model_name"],
+        model=bridge.model_name,
         via_device=connecting_inverter_device_id,  # type: ignore
     )
 

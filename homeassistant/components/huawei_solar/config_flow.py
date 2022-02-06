@@ -8,7 +8,6 @@ from huawei_solar import (
     ConnectionException,
     HuaweiSolarBridge,
     HuaweiSolarException,
-    InverterInfo,
     ReadException,
 )
 import voluptuous as vol
@@ -61,15 +60,16 @@ async def validate_input(data: dict[str, Any]) -> dict[str, Any]:
             slave_id=data[CONF_SLAVE_IDS][0],
         )
 
-        inverter_info = await bridge.get_info()
-
         _LOGGER.info(
             "Successfully connected to inverter %s with SN %s",
-            inverter_info["model_name"],
-            inverter_info["serial_number"],
+            bridge.model_name,
+            bridge.serial_number,
         )
 
-        result = {**inverter_info}
+        result = {
+            "model_name": bridge.model_name,
+            "serial_number": bridge.serial_number,
+        }
         if data[CONF_ENABLE_PARAMETER_CONFIGURATION]:
             # Check if we have write access. If this is not the case, we will
             # need to login (and request the username/password from the user to be
@@ -142,7 +142,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._slave_ids: list[int] | None = None
         self._enable_parameter_configuration = False
 
-        self._inverter_info: InverterInfo | None = None
+        self._inverter_info: dict | None = None
 
         self._username: str | None = None
         self._password: str | None = None
