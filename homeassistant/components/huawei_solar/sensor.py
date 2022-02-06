@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import logging
 
 from huawei_solar import register_names as rn, register_values as rv
 
@@ -27,10 +26,8 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import HuaweiSolarUpdateCoordinator
+from . import HuaweiSolarEntity, HuaweiSolarUpdateCoordinator
 from .const import DATA_UPDATE_COORDINATORS, DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
 
 PARALLEL_UPDATES = 1
 
@@ -542,38 +539,43 @@ async def async_setup_entry(
         DATA_UPDATE_COORDINATORS
     ]  # type: list[HuaweiSolarUpdateCoordinator]
 
+    # When more than one inverter is present, then we suffix all sensors with '#1', '#2', ...
+    # The order for these suffixes is the order in which the user entered the slave-ids.
+    must_append_inverter_suffix = len(update_coordinators) > 1
+
     entities_to_add: list[SensorEntity] = []
-    for update_coordinator in update_coordinators:
+    for idx, update_coordinator in enumerate(update_coordinators):
+        slave_entities: list[HuaweiSolarSensorEntity] = []
 
         bridge = update_coordinator.bridge
         device_infos = update_coordinator.device_infos
 
         for entity_description in INVERTER_SENSOR_DESCRIPTIONS:
-            entities_to_add.append(
-                HuaweiSolarSensor(
+            slave_entities.append(
+                HuaweiSolarSensorEntity(
                     update_coordinator, entity_description, device_infos["inverter"]
                 )
             )
 
         for entity_description in get_pv_entity_descriptions(bridge.pv_string_count):
-            entities_to_add.append(
-                HuaweiSolarSensor(
+            slave_entities.append(
+                HuaweiSolarSensorEntity(
                     update_coordinator, entity_description, device_infos["inverter"]
                 )
             )
 
         if bridge.has_optimizers:
             for entity_description in OPTIMIZER_SENSOR_DESCRIPTIONS:
-                entities_to_add.append(
-                    HuaweiSolarSensor(
+                slave_entities.append(
+                    HuaweiSolarSensorEntity(
                         update_coordinator, entity_description, device_infos["inverter"]
                     )
                 )
 
         if bridge.power_meter_type == rv.MeterType.SINGLE_PHASE:
             for entity_description in SINGLE_PHASE_METER_ENTITY_DESCRIPTIONS:
-                entities_to_add.append(
-                    HuaweiSolarSensor(
+                slave_entities.append(
+                    HuaweiSolarSensorEntity(
                         update_coordinator,
                         entity_description,
                         device_infos["power_meter"],
@@ -581,8 +583,8 @@ async def async_setup_entry(
                 )
         elif bridge.power_meter_type == rv.MeterType.THREE_PHASE:
             for entity_description in THREE_PHASE_METER_ENTITY_DESCRIPTIONS:
-                entities_to_add.append(
-                    HuaweiSolarSensor(
+                slave_entities.append(
+                    HuaweiSolarSensorEntity(
                         update_coordinator,
                         entity_description,
                         device_infos["power_meter"],
@@ -591,18 +593,25 @@ async def async_setup_entry(
 
         if bridge.battery_1_type != rv.StorageProductModel.NONE:
             for entity_description in BATTERY_SENSOR_DESCRIPTIONS:
-                entities_to_add.append(
-                    HuaweiSolarSensor(
+                slave_entities.append(
+                    HuaweiSolarSensorEntity(
                         update_coordinator,
                         entity_description,
                         device_infos["connected_energy_storage"],
                     )
                 )
 
+        # Add suffix if multiple inverters are present
+        if must_append_inverter_suffix:
+            for entity in slave_entities:
+                entity.add_name_suffix(f" #{idx+1}")
+
+        entities_to_add.extend(slave_entities)
+
     async_add_entities(entities_to_add, True)
 
 
-class HuaweiSolarSensor(CoordinatorEntity, SensorEntity):
+class HuaweiSolarSensorEntity(CoordinatorEntity, HuaweiSolarEntity, SensorEntity):
     """Huawei Solar Sensor which receives its data via an DataUpdateCoordinator."""
 
     entity_description: HuaweiSolarSensorEntityDescription

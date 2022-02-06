@@ -13,8 +13,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import HuaweiSolarUpdateCoordinator
-from .const import DATA_UPDATE_COORDINATORS, DOMAIN
+from . import HuaweiSolarEntity, HuaweiSolarUpdateCoordinator
+from .const import CONF_ENABLE_PARAMETER_CONFIGURATION, DATA_UPDATE_COORDINATORS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,27 +75,29 @@ async def async_setup_entry(
 ) -> None:
     """Huawei Solar Number entities Setup."""
 
+    if not entry.data[CONF_ENABLE_PARAMETER_CONFIGURATION]:
+        _LOGGER.info("Skipping number setup, as parameter configuration is not enabled")
+        return
+
     update_coordinators = hass.data[DOMAIN][entry.entry_id][
         DATA_UPDATE_COORDINATORS
     ]  # type: list[HuaweiSolarUpdateCoordinator]
 
-    entities_to_add: list[NumberEntity] = []
+    # When more than one inverter is present, then we suffix all sensors with '#1', '#2', ...
+    # The order for these suffixes is the order in which the user entered the slave-ids.
+    must_append_inverter_suffix = len(update_coordinators) > 1
 
-    for update_coordinator in update_coordinators:
+    entities_to_add: list[NumberEntity] = []
+    for idx, update_coordinator in enumerate(update_coordinators):
+        slave_entities: list[HuaweiSolarNumberEntity] = []
         bridge = update_coordinator.bridge
         device_infos = update_coordinator.device_infos
-
-        if not bridge.has_write_access:
-            _LOGGER.info(
-                "Skipping slave %s, as we have no write access there", bridge.slave_id
-            )
-            continue
 
         if bridge.battery_1_type != rv.StorageProductModel.NONE:
             assert device_infos["connected_energy_storage"]
 
             for entity_description in ENERGY_STORAGE_NUMBER_DESCRIPTIONS:
-                entities_to_add.append(
+                slave_entities.append(
                     await HuaweiSolarNumberEntity.create(
                         bridge,
                         entity_description,
@@ -109,10 +111,17 @@ async def async_setup_entry(
                 bridge.slave_id,
             )
 
+        # Add suffix if multiple inverters are present
+        if must_append_inverter_suffix:
+            for entity in slave_entities:
+                entity.add_name_suffix(f" #{idx+1}")
+
+        entities_to_add.extend(slave_entities)
+
     async_add_entities(entities_to_add)
 
 
-class HuaweiSolarNumberEntity(NumberEntity):
+class HuaweiSolarNumberEntity(HuaweiSolarEntity, NumberEntity):
     """Huawei Solar Number Entity."""
 
     def __init__(

@@ -25,7 +25,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.debounce import Debouncer
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -101,7 +101,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from err
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
-    await async_setup_services(hass, bridges_with_device_infos)
+    await async_setup_services(hass, entry, bridges_with_device_infos)
 
     return True
 
@@ -234,3 +234,11 @@ async def _create_update_coordinator(
     await coordinator.async_config_entry_first_refresh()
 
     return coordinator
+
+
+class HuaweiSolarEntity(Entity):
+    """Huawei Solar Entity."""
+
+    def add_name_suffix(self, suffix) -> None:
+        """Add a suffix after the current entity name."""
+        self._attr_name = f"{self.name}{suffix}"
