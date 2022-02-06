@@ -69,7 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 except InvalidCredentials as err:
                     raise ConfigEntryAuthFailed() from err
 
-        primary_bridge_device_infos = _compute_device_infos(
+        primary_bridge_device_infos = await _compute_device_infos(
             primary_bridge,
             connecting_inverter_device_id=None,
         )
@@ -83,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 primary_bridge.client, extra_slave_id
             )
 
-            extra_bridge_device_infos = _compute_device_infos(
+            extra_bridge_device_infos = await _compute_device_infos(
                 primary_bridge,
                 connecting_inverter_device_id=(DOMAIN, primary_bridge.serial_number),
             )
@@ -137,17 +137,19 @@ class HuaweiInverterBridgeDeviceInfos(TypedDict):
     connected_energy_storage: DeviceInfo | None
 
 
-def _compute_device_infos(
+async def _compute_device_infos(
     bridge: HuaweiSolarBridge,
     connecting_inverter_device_id: tuple[str, str] | None,
 ) -> HuaweiInverterBridgeDeviceInfos:
     """Create the correct DeviceInfo-objects, which can be used to correctly assign to entities in this integration."""
 
+    info = await bridge.get_info()
+
     inverter_device_info = DeviceInfo(
         identifiers={(DOMAIN, bridge.serial_number)},
-        name=bridge.model_name,
+        name=info["model_name"],
         manufacturer="Huawei",
-        model=bridge.model_name,
+        model=info["model_name"],
         via_device=connecting_inverter_device_id,  # type: ignore
     )
 

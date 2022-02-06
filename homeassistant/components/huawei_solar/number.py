@@ -6,7 +6,11 @@ import logging
 
 from huawei_solar import HuaweiSolarBridge, register_names as rn, register_values as rv
 
-from homeassistant.components.number import NumberEntity, NumberEntityDescription
+from homeassistant.components.number import (
+    NumberEntity,
+    NumberEntityDescription,
+    NumberMode,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, POWER_WATT
 from homeassistant.core import HomeAssistant
@@ -158,6 +162,7 @@ class HuaweiSolarNumberEntity(HuaweiSolarEntity, NumberEntity):
         self._attr_device_info = device_info
         self._attr_unique_id = f"{bridge.serial_number}_{description.key}"
         self._attr_value = initial_value
+        self._attr_mode = NumberMode.BOX  # Always allow a precise number
 
     @classmethod
     async def create(
