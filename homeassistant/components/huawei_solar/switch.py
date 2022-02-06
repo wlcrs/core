@@ -24,7 +24,7 @@ T = TypeVar("T")
 
 @dataclass
 class HuaweiSolarSwitchEntityDescription(Generic[T], SwitchEntityDescription):
-    """Huawei Solar Number Entity Description."""
+    """Huawei Solar Switch Entity Description."""
 
 
 ENERGY_STORAGE_SWITCH_DESCRIPTIONS: tuple[HuaweiSolarSwitchEntityDescription, ...] = (
@@ -67,7 +67,7 @@ async def async_setup_entry(
             assert device_infos["connected_energy_storage"]
 
             for entity_description in ENERGY_STORAGE_SWITCH_DESCRIPTIONS:
-                entities_to_add.append(
+                slave_entities.append(
                     await HuaweiSolarSwitchEntity.create(
                         bridge,
                         entity_description,
@@ -76,7 +76,7 @@ async def async_setup_entry(
                 )
         else:
             _LOGGER.debug(
-                "No battery detected on slave %s. Skipping energy storage number entities",
+                "No battery detected on slave %s. Skipping energy storage switch entities",
                 bridge.slave_id,
             )
 

@@ -25,7 +25,6 @@ class HuaweiSolarNumberEntityDescription(NumberEntityDescription):
 
     minimum_key: str | None = None
     maximum_key: str | None = None
-    custom_class: type[HuaweiSolarNumberEntity] | None = None
 
 
 ENERGY_STORAGE_NUMBER_DESCRIPTIONS: tuple[HuaweiSolarNumberEntityDescription, ...] = (
@@ -61,6 +60,24 @@ ENERGY_STORAGE_NUMBER_DESCRIPTIONS: tuple[HuaweiSolarNumberEntityDescription, ..
         min_value=0,
         maximum_key=rn.STORAGE_MAXIMUM_POWER_OF_CHARGE_FROM_GRID,
         name="Grid Charge Maximum Power",
+        icon="mdi:battery-negative",
+        unit_of_measurement=POWER_WATT,
+        entity_category=EntityCategory.CONFIG,
+    ),
+    HuaweiSolarNumberEntityDescription(
+        key=rn.STORAGE_FORCIBLE_CHARGE_POWER,
+        min_value=0,
+        maximum_key=rn.STORAGE_MAXIMUM_CHARGE_POWER,
+        name="Forcible Charge Power",
+        icon="mdi:battery-positive",
+        unit_of_measurement=POWER_WATT,
+        entity_category=EntityCategory.CONFIG,
+    ),
+    HuaweiSolarNumberEntityDescription(
+        key=rn.STORAGE_FORCIBLE_DISCHARGE_POWER,
+        min_value=0,
+        maximum_key=rn.STORAGE_MAXIMUM_DISCHARGE_POWER,
+        name="Forcible Discharge Power",
         icon="mdi:battery-negative",
         unit_of_measurement=POWER_WATT,
         entity_category=EntityCategory.CONFIG,
