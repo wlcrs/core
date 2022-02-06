@@ -7,17 +7,29 @@ import logging
 from typing import TypedDict, TypeVar
 
 import async_timeout
-from huawei_solar import HuaweiSolarBridge, HuaweiSolarException, register_values as rv
+from huawei_solar import (
+    HuaweiSolarBridge,
+    HuaweiSolarException,
+    InvalidCredentials,
+    register_values as rv,
+)
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PORT, Platform
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_PASSWORD,
+    CONF_PORT,
+    CONF_USERNAME,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
+    CONF_ENABLE_PARAMETER_CONFIGURATION,
     CONF_SLAVE_IDS,
     DATA_UPDATE_COORDINATORS,
     DOMAIN,
@@ -41,9 +53,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             host=entry.data[CONF_HOST],
             port=entry.data[CONF_PORT],
             slave_id=entry.data[CONF_SLAVE_IDS][0],
-            username="installer",
-            password="00000a",
         )
+
+        if entry.data.get(CONF_ENABLE_PARAMETER_CONFIGURATION):
+            if entry.data.get(CONF_USERNAME) and entry.data.get(CONF_PASSWORD):
+                try:
+                    await primary_bridge.login(
+                        entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
+                    )
+                except InvalidCredentials as err:
+                    raise ConfigEntryAuthFailed() from err
 
         primary_bridge_device_infos = _compute_device_infos(
             primary_bridge,
