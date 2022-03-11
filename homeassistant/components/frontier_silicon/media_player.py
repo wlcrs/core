@@ -8,6 +8,7 @@ from afsapi import (
     AFSAPI,
     ConnectionError as FSConnectionError,
     FSApiException,
+    NotImplementedException,
     PlayState,
 )
 import voluptuous as vol
@@ -127,6 +128,7 @@ class AFSAPIDevice(MediaPlayerEntity):
         self._attr_source_list = None
         self._attr_source = None
 
+        self.__supports_sound_mode = True
         self._attr_sound_mode_list = None
         self._attr_sound_mode = None
 
@@ -238,7 +240,13 @@ class AFSAPIDevice(MediaPlayerEntity):
 
             self._attr_source = (await afsapi.get_mode()).label
 
-            self._attr_sound_mode = (await afsapi.get_eq_preset()).label
+            if self.__supports_sound_mode:
+                try:
+                    self._attr_sound_mode = (await afsapi.get_eq_preset()).label
+                except NotImplementedException:
+                    # prevent future requests for this unsupported feature
+                    self.__supports_sound_mode = False
+
             self._attr_is_volume_muted = await afsapi.get_mute()
             self._attr_media_image_url = await afsapi.get_play_graphic()
 
