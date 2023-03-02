@@ -21,15 +21,32 @@ from homeassistant.components.media_player import (
     MediaPlayerState,
     MediaType,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PASSWORD, CONF_PORT
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_PLATFORM,
+    CONF_PORT,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import PlatformNotReady
+from homeassistant.helpers import issue_registry as ir
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .browse_media import browse_node, browse_top_level
-from .const import DEFAULT_PIN, DEFAULT_PORT, DOMAIN, MEDIA_CONTENT_ID_PRESET
+from .const import (
+    CONF_PIN,
+    CONF_WEBFSAPI_URL,
+    DEFAULT_PIN,
+    DEFAULT_PORT,
+    DOMAIN,
+    MEDIA_CONTENT_ID_PRESET,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +60,51 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
+) -> None:
+    """Set up the Frontier Silicon platform from SSDP or perform a migration from YAML config to Config Flow entity.."""
+    if discovery_info is not None:
+        webfsapi_url = await AFSAPI.get_webfsapi_endpoint(
+            discovery_info["ssdp_description"]
+        )
+        afsapi = AFSAPI(webfsapi_url, DEFAULT_PIN)
+
+        name = await afsapi.get_friendly_name()
+        async_add_entities(
+            [AFSAPIDevice(name, afsapi)],
+            True,
+        )
+
+    async def _migrate_entry(entry_to_migrate):
+        await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_IMPORT},
+            data={
+                CONF_NAME: entry_to_migrate.get(CONF_NAME),
+                CONF_HOST: entry_to_migrate.get(CONF_HOST),
+                CONF_PORT: entry_to_migrate.get(CONF_PORT, DEFAULT_PORT),
+                CONF_PIN: entry_to_migrate.get(CONF_PASSWORD, DEFAULT_PIN),
+            },
+        )
+
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            "remove_yaml",
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="removed_yaml",
+        )
+
+    for entry_to_migrate in config.get(Platform.MEDIA_PLAYER, []):
+        if entry_to_migrate.get(CONF_PLATFORM) == DOMAIN:
+            hass.async_create_task(_migrate_entry(entry_to_migrate))
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -50,7 +112,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Frontier Silicon entity."""
 
-    afsapi = hass.data[DOMAIN][config_entry.entry_id]  # type: AFSAPI
+    webfsapi_url = config_entry.data[CONF_WEBFSAPI_URL]
+    pin = config_entry.data[CONF_PIN]
+
+    afsapi = AFSAPI(webfsapi_url, pin)
+
+    try:
+        await afsapi.get_power()
+    except FSConnectionError as exception:
+        raise PlatformNotReady from exception
 
     async_add_entities([AFSAPIDevice(config_entry, afsapi)], True)
 
