@@ -601,7 +601,7 @@ DEVICE_CLASS_STATE_CLASSES: dict[SensorDeviceClass, set[SensorStateClass]] = {
         SensorStateClass.TOTAL,
         SensorStateClass.TOTAL_INCREASING,
     },
-    SensorDeviceClass.ENERGY_STORAGE: {SensorStateClass.MEASUREMENT},
+    SensorDeviceClass.ENERGY_STORAGE: set(SensorStateClass),
     SensorDeviceClass.ENUM: set(),
     SensorDeviceClass.FREQUENCY: {SensorStateClass.MEASUREMENT},
     SensorDeviceClass.GAS: {SensorStateClass.TOTAL, SensorStateClass.TOTAL_INCREASING},
